@@ -25,6 +25,12 @@
         }
       }
     }
+    // Register PWA Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      });
+    }
   </script>
   <style>
     /* Prevent accidental pull-to-refresh or page bouncing when dragging canvas on mobile */
@@ -42,6 +48,8 @@
       border-radius: 9999px;
     }
   </style>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#4f46e5">
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased selection:bg-indigo-100 selection:text-indigo-900">
 
@@ -83,6 +91,7 @@
         <div class="relative" id="dropdownContainer">
           <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Select Target Examination Preset</label>
           
+          <!-- Selected Trigger Button -->
           <button type="button" id="dropdownTrigger" class="w-full flex items-center justify-between bg-white border border-slate-300 hover:border-indigo-500 rounded-xl px-4 py-3 text-left transition shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
             <div class="flex flex-col">
               <span id="selectedPresetTitle" class="text-sm font-bold text-slate-900">TNPSC Photo (Group 1, 2, 4)</span>
@@ -91,35 +100,43 @@
             <span class="text-slate-400 text-xs transition transform group-hover:text-indigo-600" id="dropdownArrow">▼</span>
           </button>
 
+          <!-- Dropdown Popup Panel -->
           <div id="dropdownMenu" class="hidden absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 max-h-80 overflow-y-auto p-2 space-y-1">
+            <!-- Search Input Field -->
             <div class="p-2 sticky top-0 bg-white/95 backdrop-blur-sm z-10 border-b border-slate-100">
               <div class="relative">
                 <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 text-xs">🔍</span>
                 <input type="text" id="presetSearchInput" placeholder="Search exam (e.g. TNPSC, Kerala PSC, SSC, Police, UPSC)..." class="w-full pl-8 pr-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-600 bg-slate-50 focus:bg-white transition">
               </div>
             </div>
+
+            <!-- List of Categorized Presets will be rendered dynamically -->
             <div id="presetItemsList" class="space-y-3 pt-1"></div>
           </div>
         </div>
 
-        <!-- 2. File Upload Dropzone -->
-        <div id="dropzone" class="border-2 border-dashed border-slate-300 hover:border-indigo-500 rounded-2xl p-6 text-center cursor-pointer transition bg-slate-50/50 relative">
-          <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-          <div class="space-y-2 pointer-events-none">
-            <div class="w-12 h-12 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center mx-auto text-xl">
+        <!-- 2. File Upload Dropzone (Mobile-friendly Label) -->
+        <label for="fileInput" id="dropzone" class="block border-2 border-dashed border-indigo-300 hover:border-indigo-600 active:bg-indigo-50 rounded-2xl p-6 text-center cursor-pointer transition bg-slate-50/70 select-none">
+          <input type="file" id="fileInput" accept="image/*" class="sr-only">
+          <div class="space-y-2">
+            <div class="w-12 h-12 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center mx-auto text-xl shadow-sm">
               📷
             </div>
-            <div class="text-sm font-semibold text-slate-800">
-              Tap to choose photo or signature
+            <div class="text-sm font-bold text-indigo-950">
+              Tap here to choose photo or signature
             </div>
-            <p class="text-xs text-slate-500">Supports JPG, PNG, WEBP directly from mobile camera or gallery</p>
+            <p class="text-xs text-slate-500">Select any image directly from camera, gallery, or downloads</p>
+            <span class="inline-block mt-1 px-3 py-1 bg-indigo-600 text-white text-[11px] font-semibold rounded-full shadow-sm">
+              Browse Files ➔
+            </span>
           </div>
-        </div>
+        </label>
 
         <!-- 3. Interactive Crop & Canvas Area -->
         <div id="editorWorkspace" class="hidden space-y-6">
+          
           <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-            
+            <!-- Canvas Viewport -->
             <div class="md:col-span-7 flex flex-col items-center">
               <div class="text-xs font-semibold text-slate-500 mb-2 flex items-center justify-between w-full">
                 <span>Crop Preview (Drag to pan, slider to zoom)</span>
@@ -130,6 +147,7 @@
                 <canvas id="cropCanvas" class="max-w-full max-h-full cursor-move"></canvas>
               </div>
 
+              <!-- Zoom & Rotate Controls -->
               <div class="w-full max-w-[340px] mt-4 space-y-3">
                 <div class="flex items-center gap-3">
                   <span class="text-xs text-slate-500 font-medium">Zoom</span>
@@ -146,8 +164,10 @@
               </div>
             </div>
 
+            <!-- Settings & Stamp Controls -->
             <div class="md:col-span-5 space-y-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
               
+              <!-- Name & Date Stamp Option -->
               <div class="space-y-3 pb-3 border-b border-slate-200">
                 <label class="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" id="stampCheckbox" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300">
@@ -166,6 +186,7 @@
                 </div>
               </div>
 
+              <!-- Target File Size Control -->
               <div class="space-y-2">
                 <label class="block text-xs font-bold text-slate-800">Target File Size Bounds</label>
                 <div class="flex items-center gap-2 text-xs">
@@ -180,6 +201,7 @@
                 </div>
               </div>
 
+              <!-- Output Status Indicator -->
               <div class="p-3 rounded-lg bg-white border border-slate-200 space-y-1.5">
                 <div class="flex items-center justify-between text-xs">
                   <span class="text-slate-500">Output Format:</span>
@@ -195,10 +217,12 @@
                 </div>
               </div>
 
+              <!-- Download Button -->
               <button type="button" id="downloadBtn" class="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl shadow transition flex items-center justify-center gap-2">
                 <span>⬇</span> Download Compressed JPG
               </button>
 
+              <!-- Optional UPI Tip Banner -->
               <div class="pt-2 text-center">
                 <a href="upi://pay?pa=yourname@upi&pn=ExamCrop&am=10&cu=INR" class="text-[11px] text-slate-500 hover:text-indigo-600 transition underline">
                   Tool saved your time? Support with ₹10 UPI
@@ -207,6 +231,7 @@
 
             </div>
           </div>
+
         </div>
 
       </div>
@@ -216,6 +241,7 @@
   <!-- ================= ADSENSE CONTENT SECTION ================= -->
   <section class="max-w-4xl mx-auto px-4 py-8 space-y-10 text-slate-700">
 
+    <!-- 1. OFFICIAL SPECIFICATIONS REFERENCE TABLE -->
     <div id="specs" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8">
       <div class="mb-5">
         <h2 class="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">Official Exam Image Specifications Reference</h2>
@@ -309,6 +335,7 @@
       </div>
     </div>
 
+    <!-- 2. INSTRUCTIONAL GUIDE & PRIVACY ASSURANCE -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
         <h3 class="text-base font-bold text-slate-900 mb-3 flex items-center gap-2">
@@ -323,25 +350,4 @@
         </ol>
       </div>
 
-      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-        <h3 class="text-base font-bold text-slate-900 mb-3 flex items-center gap-2">
-          <span>🔒</span> 100% Client-Side Privacy Guarantee
-        </h3>
-        <p class="text-xs md:text-sm text-slate-600 leading-relaxed mb-3">
-          ExamCrop processes all images entirely inside your web browser using HTML5 Canvas and WebAssembly.
-        </p>
-        <ul class="space-y-2 text-xs md:text-sm text-slate-600">
-          <li class="flex items-start gap-2">
-            <span class="text-emerald-500 font-bold">✓</span> No personal photos, signatures, or biometric records are ever sent to an external server.
-          </li>
-          <li class="flex items-start gap-2">
-            <span class="text-emerald-500 font-bold">✓</span> Operates completely offline once cached on your phone or desktop.
-          </li>
-          <li class="flex items-start gap-2">
-            <span class="text-emerald-500 font-bold">✓</span> Zero account creation or personal phone number required.
-          </li>
-        </ul>
-      </div>
-    </div>
-
-    <div id="faq" class="bg-white rounded-2xl
+      <div class="bg-white round
